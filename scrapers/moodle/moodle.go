@@ -22,7 +22,7 @@ type App struct {
 
 type Grade struct {
 	Name       string
-	Value      string
+	Grade      string
 	Range      string
 	Percentage string
 }
@@ -63,8 +63,33 @@ func (app *App) login(username string, password string) LoginResponse {
 	return LoginResponse{}
 }
 
-func (app *App) parseCourse(courseLink string) []Grade {
-	return make([]Grade, 0)
+// TODO: Ban grades with names like Attendance, etc..
+func (app *App) parseCourse(courseLink string, courseName string) []Grade {
+	coursePage, err := app.client.Get(courseLink)
+	if err != nil {
+		return make([]Grade, 0)
+	}
+	defer coursePage.Body.Close()
+
+	courseDoc, _ := goquery.NewDocumentFromReader(coursePage.Body)
+	gradeRows := courseDoc.Find("tbody").First().Find("tr")
+	grades := make([]Grade, 0)
+
+	gradeRows.Each(func(i int, s *goquery.Selection) {
+		grade := strings.TrimSpace(s.Find(".column-grade").First().Text())
+		if len(grade) == 0 {
+			return
+		}
+
+		name := strings.TrimSpace(s.Find(".column-itemname").First().Text())
+		gradeRange := strings.TrimSpace(s.Find(".column-range").First().Text())
+		percentage := strings.TrimSpace(s.Find(".column-percentage").First().Text())
+
+		grades = append(grades, Grade{Name: name, Grade: grade, Range: gradeRange, Percentage: percentage})
+		fmt.Println("Got grade for ", courseName)
+	})
+
+	return grades
 }
 
 func (app *App) GetGrades(username string, password string) MoodleResponse {
@@ -104,7 +129,7 @@ func (app *App) GetGrades(username string, password string) MoodleResponse {
 
 		go func(courseEntry CourseEntry) {
 			defer wg.Done()
-			coursesChannel <- Course{Name: courseEntry.Name, Grades: app.parseCourse(courseEntry.Link)}
+			coursesChannel <- Course{Name: courseEntry.Name, Grades: app.parseCourse(courseEntry.Link, courseEntry.Name)}
 		}(courseEntry)
 	}
 

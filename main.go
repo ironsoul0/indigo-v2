@@ -1,28 +1,28 @@
 package main
 
 import (
-	"fmt"
+	"database/sql"
+	"log"
 
-	"github.com/ironsoul0/indigo-v2/scrapers/moodle"
-	"github.com/spf13/viper"
+	db "github.com/ironsoul0/indigo-v2/db/sqlc"
+	"github.com/ironsoul0/indigo-v2/util"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-	viper.SetConfigType("yml")
-	viper.ReadInConfig()
+	config, err := util.LoadConfig(".")
 
-	moodleClient := moodle.Init()
-	grades := moodleClient.GetGrades(viper.Get("USER.NAME").(string), viper.Get("USER.PASSWORD").(string))
-
-	if grades.Success {
-		for _, course := range grades.Courses {
-			fmt.Println(course.Name)
-			fmt.Println()
-			fmt.Println(course.Grades)
-			fmt.Println()
-			fmt.Println()
-		}
+	if err != nil {
+		log.Fatal("Can not read config file:", err)
 	}
+
+	// moodleClient := moodle.Init()
+	// _ = moodleClient.GetGrades(config.UserName, config.UserPassword)
+
+	conn, err := sql.Open(config.DBDriver, config.DBSource)
+	if err != nil {
+		log.Fatal("Can not connect do DB:", err)
+	}
+
+	store := db.NewStore(conn)
 }

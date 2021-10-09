@@ -1,6 +1,7 @@
 package moodle
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/cookiejar"
@@ -13,7 +14,8 @@ import (
 )
 
 const (
-	baseURL = "https://moodle.nu.edu.kz"
+	baseURL   = "https://moodle.nu.edu.kz"
+	csrfToken = "logintoken"
 )
 
 type App struct {
@@ -43,11 +45,35 @@ type MoodleResponse struct {
 	LoginResponse
 }
 
+func (app *App) extractToken() (string, error) {
+	response, _ := app.client.Get(baseURL)
+	pageDoc, err := goquery.NewDocumentFromReader(response.Body)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer response.Body.Close()
+
+	if loginToken, ok := pageDoc.Find(fmt.Sprintf("input[name|='%s']", csrfToken)).First().Attr("value"); ok {
+		return loginToken, nil
+	}
+
+	return "", errors.New("no token was found")
+}
+
 func (app *App) login(username string, password string) LoginResponse {
+	extractedToken, err := app.extractToken()
+
+	if err != nil {
+		return LoginResponse{RequestFailure: true}
+	}
+
 	loginURL := fmt.Sprintf("%s/login/index.php", baseURL)
 	data := url.Values{
 		"username": {username},
 		"password": {password},
+		csrfToken:  {extractedToken},
 	}
 
 	response, err := app.client.PostForm(loginURL, data)
@@ -56,7 +82,7 @@ func (app *App) login(username string, password string) LoginResponse {
 	}
 	defer response.Body.Close()
 
-	if !strings.Contains(response.Header.Get("Location"), "testsession") {
+	if !strings.Contains(response.Request.URL.String(), "my") {
 		return LoginResponse{InvalidCredentials: true}
 	}
 
@@ -86,7 +112,6 @@ func (app *App) parseCourse(courseLink string, courseName string) []Grade {
 		percentage := strings.TrimSpace(s.Find(".column-percentage").First().Text())
 
 		grades = append(grades, Grade{Name: name, Grade: grade, Range: gradeRange, Percentage: percentage})
-		fmt.Println("Got grade for ", courseName)
 	})
 
 	return grades
@@ -147,12 +172,9 @@ func (app *App) GetGrades(username string, password string) MoodleResponse {
 }
 
 func Init() *App {
-	var app App
 	jar, _ := cookiejar.New(nil)
-	app = App{
-		client: &http.Client{Jar: jar, Timeout: 3 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		}},
+
+	return &App{
+		client: &http.Client{Jar: jar, Timeout: 3 * time.Second},
 	}
-	return &app
 }

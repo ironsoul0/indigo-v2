@@ -1,6 +1,7 @@
 package util
 
 import (
+	"log"
 	"time"
 
 	"github.com/spf13/viper"
@@ -9,6 +10,8 @@ import (
 type Config struct {
 	UserName            string        `mapstructure:"USER_NAME"`
 	UserPassword        string        `mapstructure:"USER_PASSWORD"`
+	BotToken            string        `mapstructure:"BOT_TOKEN"`
+	DBPath              string        `mapstructure:"DB_PATH"`
 	DBDriver            string        `mapstructure:"DB_DRIVER"`
 	DBSource            string        `mapstructure:"DB_SOURCE"`
 	ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
@@ -16,18 +19,23 @@ type Config struct {
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 }
 
-func LoadConfig(path string) (config Config, err error) {
+func LoadConfig(path string) Config {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
 	viper.AutomaticEnv()
 
-	err = viper.ReadInConfig()
+	err := viper.ReadInConfig()
 
 	if err != nil {
-		return
+		log.Fatal("could not read config", err)
 	}
 
+	var config Config
 	err = viper.Unmarshal(&config)
-	return
+	if err != nil {
+		log.Fatal("could not read config", err)
+	}
+
+	return config
 }

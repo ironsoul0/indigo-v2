@@ -16,3 +16,4 @@
 
 .idea/
 config.yaml
+*.db

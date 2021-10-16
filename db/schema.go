@@ -7,7 +7,7 @@ const (
 )
 
 type User struct {
-	ChatID    string          `json:"chatID"`
+	ChatID    int             `json:"chatID"`
 	Username  string          `json:"username"`
 	Password  string          `json:"password"`
 	Activated bool            `json:"activated"`

@@ -33,7 +33,7 @@ func handleRegister(b *tb.Bot, db *bolt.DB) func(m *tb.Message) {
 			bucket := tx.Bucket([]byte(schema.USERS_BUCKET))
 
 			user := schema.User{
-				ChatID:    chatID,
+				ChatID:    m.Sender.ID,
 				Username:  username,
 				Password:  password,
 				Activated: true,

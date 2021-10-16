@@ -2,7 +2,6 @@ package bot
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -13,9 +12,10 @@ import (
 )
 
 type ParseResult struct {
-	chatID     string
-	diff       []moodle.Course
-	deactivate bool
+	chatID        int
+	diff          []moodle.Course
+	recentCoruses []moodle.Course
+	deactivate    bool
 }
 
 func checkGrades(taskPool chan schema.User, resultChan chan ParseResult, wg *sync.WaitGroup) {
@@ -39,8 +39,9 @@ func checkGrades(taskPool chan schema.User, resultChan chan ParseResult, wg *syn
 		}
 
 		resultChan <- ParseResult{
-			chatID: userToCheck.ChatID,
-			diff:   moodle.DetectNewGrades(userToCheck.Courses, response.Courses),
+			chatID:        userToCheck.ChatID,
+			diff:          moodle.DetectNewGrades(userToCheck.Courses, response.Courses),
+			recentCoruses: response.Courses,
 		}
 	}
 }
@@ -85,7 +86,7 @@ func notify(bot *tb.Bot, db *bolt.DB) {
 		}()
 
 		for moodleDiff := range resultChan {
-			fmt.Println(moodleDiff)
+			handleDiff(bot, db, moodleDiff)
 		}
 
 		time.Sleep(15 * time.Second)

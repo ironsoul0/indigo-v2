@@ -19,14 +19,4 @@ func main() {
 	fmt.Println(bot)
 
 	time.Sleep(100 * time.Second)
-
-	// moodleClient := moodle.Init()
-	// grades := moodleClient.GetGrades(config.UserName, config.UserPassword)
-
-	// conn, err := sql.Open(config.DBDriver, config.DBSource)
-	// if err != nil {
-	// 	log.Fatal("Can not connect do DB:", err)
-	// }
-
-	// store := db.NewStore(conn)
 }

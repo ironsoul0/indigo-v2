@@ -23,15 +23,15 @@ type App struct {
 }
 
 type Grade struct {
-	Name       string
-	Grade      string
-	Range      string
-	Percentage string
+	Name       string `json:"name"`
+	Grade      string `json:"grade"`
+	Range      string `json:"range"`
+	Percentage string `json:"percentage"`
 }
 
 type Course struct {
-	Name   string
-	Grades []Grade
+	Name   string  `json:"name"`
+	Grades []Grade `json:"grades"`
 }
 
 type LoginResponse struct {

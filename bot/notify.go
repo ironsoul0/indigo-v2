@@ -1,0 +1,93 @@
+package bot
+
+import (
+	"encoding/json"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/boltdb/bolt"
+	schema "github.com/ironsoul0/indigo-v2/db"
+	"github.com/ironsoul0/indigo-v2/scrapers/moodle"
+	tb "gopkg.in/tucnak/telebot.v2"
+)
+
+type ParseResult struct {
+	chatID     string
+	diff       []moodle.Course
+	deactivate bool
+}
+
+func checkGrades(taskPool chan schema.User, resultChan chan ParseResult, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	moodleClient := moodle.Init()
+
+	for userToCheck := range taskPool {
+		response := moodleClient.GetGrades(userToCheck.Username, userToCheck.Password)
+
+		if response.RequestFailure {
+			continue
+		}
+
+		if response.InvalidCredentials {
+			resultChan <- ParseResult{
+				chatID:     userToCheck.ChatID,
+				deactivate: true,
+			}
+			return
+		}
+
+		resultChan <- ParseResult{
+			chatID: userToCheck.ChatID,
+			diff:   moodle.DetectNewGrades(userToCheck.Courses, response.Courses),
+		}
+	}
+}
+
+func notify(bot *tb.Bot, db *bolt.DB) {
+	for {
+		usersToCheck := make([]schema.User, 0)
+
+		db.View(func(tx *bolt.Tx) error {
+			bucket := tx.Bucket([]byte(schema.USERS_BUCKET))
+			c := bucket.Cursor()
+
+			for k, v := c.First(); k != nil; k, v = c.Next() {
+				var user schema.User
+				json.Unmarshal(v, &user)
+
+				if user.Activated {
+					usersToCheck = append(usersToCheck, user)
+				}
+			}
+
+			return nil
+		})
+
+		taskPool := make(chan schema.User)
+		resultChan := make(chan ParseResult)
+		var wg sync.WaitGroup
+
+		wg.Add(WORKERS)
+		for i := 0; i < WORKERS; i++ {
+			go checkGrades(taskPool, resultChan, &wg)
+		}
+
+		for _, user := range usersToCheck {
+			taskPool <- user
+		}
+		close(taskPool)
+
+		go func() {
+			wg.Wait()
+			close(resultChan)
+		}()
+
+		for moodleDiff := range resultChan {
+			fmt.Println(moodleDiff)
+		}
+
+		time.Sleep(15 * time.Second)
+	}
+}

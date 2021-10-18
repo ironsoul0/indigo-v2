@@ -43,7 +43,19 @@ func handleDiff(bot *tb.Bot, db *bolt.DB, parseResult ParseResult) {
 	newGrades := 0
 	for _, courseDiff := range parseResult.diff {
 		for _, newGrade := range courseDiff.Grades {
-			bot.Send(tb.ChatID(parseResult.chatID), fmt.Sprintf(newGradeNotification, courseDiff.Name, newGrade.Name, newGrade.Grade, newGrade.Range, newGrade.Percentage), tb.ModeHTML)
+			bot.Send(
+				tb.ChatID(parseResult.chatID),
+				fmt.Sprintf(
+					newGradeNotification,
+					courseDiff.Name,
+					newGrade.Name,
+					newGrade.Grade,
+					newGrade.Range,
+					newGrade.Percentage,
+				),
+				tb.ModeHTML,
+			)
+
 			newGrades++
 		}
 	}

@@ -3,7 +3,8 @@ package db
 import "github.com/ironsoul0/indigo-v2/scrapers/moodle"
 
 const (
-	USERS_BUCKET = "users"
+	USERS_BUCKET  = "users"
+	STATES_BUCKET = "states"
 )
 
 type User struct {

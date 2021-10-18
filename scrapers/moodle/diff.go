@@ -26,10 +26,6 @@ func DetectNewGrades(prevCourses []Course, newCourses []Course) []Course {
 			}
 		}
 
-		uniqueGrades = append(uniqueGrades, Grade{
-			Name: "Test name",
-		})
-
 		diff = append(diff, Course{
 			Name:   course.Name,
 			Grades: uniqueGrades,

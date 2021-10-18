@@ -89,11 +89,10 @@ func (app *App) login(username string, password string) LoginResponse {
 	return LoginResponse{}
 }
 
-// TODO: Ban grades with names like Attendance, etc..
 func (app *App) parseCourse(courseLink string, courseName string) []Grade {
 	coursePage, err := app.client.Get(courseLink)
 	if err != nil {
-		return make([]Grade, 0)
+		return nil
 	}
 	defer coursePage.Body.Close()
 
@@ -110,8 +109,16 @@ func (app *App) parseCourse(courseLink string, courseName string) []Grade {
 		name := strings.TrimSpace(s.Find(".column-itemname").First().Text())
 		gradeRange := strings.TrimSpace(s.Find(".column-range").First().Text())
 		percentage := strings.TrimSpace(s.Find(".column-percentage").First().Text())
+		curGrade := Grade{
+			Name:       name,
+			Grade:      grade,
+			Range:      gradeRange,
+			Percentage: percentage,
+		}
 
-		grades = append(grades, Grade{Name: name, Grade: grade, Range: gradeRange, Percentage: percentage})
+		if len(curGrade.Grade) > 1 {
+			grades = append(grades, curGrade)
+		}
 	})
 
 	return grades
@@ -166,6 +173,10 @@ func (app *App) GetGrades(username string, password string) MoodleResponse {
 	courses := make([]Course, 0)
 	for course := range coursesChannel {
 		courses = append(courses, course)
+
+		if course.Grades == nil {
+			return MoodleResponse{Success: false}
+		}
 	}
 
 	return MoodleResponse{Success: true, Courses: courses}

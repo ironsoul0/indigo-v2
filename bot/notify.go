@@ -26,16 +26,16 @@ func checkGrades(taskPool chan schema.User, resultChan chan ParseResult, wg *syn
 	for userToCheck := range taskPool {
 		response := moodleClient.GetGrades(userToCheck.Username, userToCheck.Password)
 
-		if response.RequestFailure {
-			continue
-		}
-
 		if response.InvalidCredentials {
 			resultChan <- ParseResult{
 				chatID:     userToCheck.ChatID,
 				deactivate: true,
 			}
 			return
+		}
+
+		if !response.Success {
+			continue
 		}
 
 		resultChan <- ParseResult{

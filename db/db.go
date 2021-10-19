@@ -20,5 +20,13 @@ func New(path string) *bolt.DB {
 		return nil
 	})
 
+	db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte(STATES_BUCKET))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
 	return db
 }

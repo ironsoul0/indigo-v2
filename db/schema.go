@@ -14,3 +14,28 @@ type User struct {
 	Activated bool            `json:"activated"`
 	Courses   []moodle.Course `json:"courses"`
 }
+
+type SceneID int
+
+const (
+	NO_SCENE           SceneID = iota
+	REGISTER_SCENE             = iota
+	VERIFICATION_SCENE         = iota
+)
+
+type RegisterMeta struct {
+	Username string
+	Password string
+}
+
+type VerificationMeta struct {
+	Code string
+}
+
+type Scene struct {
+	ChatID int
+	Scene  SceneID
+	RegisterMeta
+	VerificationMeta
+	Step int
+}

@@ -8,12 +8,13 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-const (
-	WORKERS = 10
-)
+type Bot struct {
+	Tg *tb.Bot
+	db *bolt.DB
+}
 
-func New(token string, db *bolt.DB) *tb.Bot {
-	bot, err := tb.NewBot(tb.Settings{
+func New(token string, db *bolt.DB) *Bot {
+	tgBot, err := tb.NewBot(tb.Settings{
 		Token:  token,
 		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
 	})
@@ -22,13 +23,12 @@ func New(token string, db *bolt.DB) *tb.Bot {
 		log.Fatal(err)
 	}
 
-	initKeyboard(bot, db)
+	bot := &Bot{Tg: tgBot, db: db}
+	bot.addAdmin()
+	bot.initKeyboard()
 
-	// bot.Handle("/register", handleRegister(bot, db))
-	// bot.Handle("/status", handleStatus(bot, db))
-
-	go bot.Start()
-	go notify(bot, db)
+	go bot.Tg.Start()
+	go bot.notify()
 
 	return bot
 }

@@ -19,11 +19,11 @@ Range: <b>%s</b>
 Percentage: <b>%s</b>
 `
 
-func handleDiff(bot *tb.Bot, db *bolt.DB, parseResult ParseResult) {
+func (bot *Bot) handleDiff(parseResult ParseResult) {
 	if parseResult.deactivate {
-		bot.Send(tb.ChatID(parseResult.chatID), "Your credentials are wrong. Notifications are off for you.")
+		bot.Tg.Send(tb.ChatID(parseResult.chatID), "Your credentials are wrong. Notifications are off for you.")
 
-		db.Update(func(tx *bolt.Tx) error {
+		bot.db.Update(func(tx *bolt.Tx) error {
 			chatID := fmt.Sprintf("%d", parseResult.chatID)
 			bucket := tx.Bucket([]byte(schema.USERS_BUCKET))
 			userData := bucket.Get([]byte(chatID))
@@ -43,7 +43,7 @@ func handleDiff(bot *tb.Bot, db *bolt.DB, parseResult ParseResult) {
 	newGrades := 0
 	for _, courseDiff := range parseResult.diff {
 		for _, newGrade := range courseDiff.Grades {
-			bot.Send(
+			bot.Tg.Send(
 				tb.ChatID(parseResult.chatID),
 				fmt.Sprintf(
 					newGradeNotification,
@@ -61,7 +61,7 @@ func handleDiff(bot *tb.Bot, db *bolt.DB, parseResult ParseResult) {
 	}
 
 	if newGrades > 0 {
-		db.Update(func(tx *bolt.Tx) error {
+		bot.db.Update(func(tx *bolt.Tx) error {
 			chatID := fmt.Sprintf("%d", parseResult.chatID)
 			bucket := tx.Bucket([]byte(schema.USERS_BUCKET))
 			userData := bucket.Get([]byte(chatID))

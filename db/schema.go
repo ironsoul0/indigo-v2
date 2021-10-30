@@ -13,6 +13,7 @@ type User struct {
 	Password  string          `json:"password"`
 	Activated bool            `json:"activated"`
 	Courses   []moodle.Course `json:"courses"`
+	Invites   int             `json:"invites"`
 }
 
 type SceneID int

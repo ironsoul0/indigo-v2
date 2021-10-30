@@ -8,7 +8,6 @@ import (
 	"github.com/boltdb/bolt"
 	schema "github.com/ironsoul0/indigo-v2/db"
 	"github.com/ironsoul0/indigo-v2/scrapers/moodle"
-	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 type ParseResult struct {
@@ -17,6 +16,10 @@ type ParseResult struct {
 	recentCoruses []moodle.Course
 	deactivate    bool
 }
+
+const (
+	WORKERS = 10
+)
 
 func checkGrades(taskPool chan schema.User, resultChan chan ParseResult, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -46,11 +49,11 @@ func checkGrades(taskPool chan schema.User, resultChan chan ParseResult, wg *syn
 	}
 }
 
-func notify(bot *tb.Bot, db *bolt.DB) {
+func (bot *Bot) notify() {
 	for {
 		usersToCheck := make([]schema.User, 0)
 
-		db.View(func(tx *bolt.Tx) error {
+		bot.db.View(func(tx *bolt.Tx) error {
 			bucket := tx.Bucket([]byte(schema.USERS_BUCKET))
 			c := bucket.Cursor()
 
@@ -86,7 +89,7 @@ func notify(bot *tb.Bot, db *bolt.DB) {
 		}()
 
 		for moodleDiff := range resultChan {
-			handleDiff(bot, db, moodleDiff)
+			bot.handleDiff(moodleDiff)
 		}
 
 		time.Sleep(15 * time.Second)
